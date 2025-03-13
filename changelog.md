@@ -15,3 +15,7 @@
 
 * Updated Version Number
 * updated `to_ics.py` to asign events as `Dates` instead of `DateTimes`, this should show up as All Day Events on the calendar.
+
+### v1.0.1
+
+* Attempting to fix the all day events.

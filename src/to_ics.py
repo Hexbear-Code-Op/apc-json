@@ -1,7 +1,7 @@
 import icalendar
 from pathlib import Path
 import json
-from datetime import datetime
+from datetime import datetime,timedelta
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -36,17 +36,17 @@ class Record:
     @property
     def on_date(self) -> datetime:
         if self.month == 2 and self.day == 29 and not IS_LEAP:
-            return datetime(CURRENT_YEAR, 3, 1).date()
+            return datetime(CURRENT_YEAR, 3, 1)
         else:
-            return datetime(CURRENT_YEAR, self.month, self.day).date()
+            return datetime(CURRENT_YEAR, self.month, self.day)
             
     def to_event(self) -> icalendar.Event:
         event = icalendar.Event()
         event.add('summary', self.title)
         event.add('comment', self.otd)
         event.add('description', self.description)
-        event.add('dtstart', self.on_date)
-        event.add('dtend', self.on_date)
+        event.add('dtstart', self.on_date.date())
+        event.add('dtend', self.on_date + timedelta(1))
         event.add('dtstamp', CURRENT_DATE)
         event.add('resources', self.links)
         event.add('categories', self.tags)
@@ -54,7 +54,7 @@ class Record:
 
 def merge_events(events: Iterable[icalendar.Event]) -> icalendar.Calendar:
     cal = icalendar.Calendar()
-    cal.add('version', '2.1')
+    cal.add('version', '1.0.2')
     cal.add('prodid', '-//aPC//aPC//EN')
     [
         cal.add_component(event) 
