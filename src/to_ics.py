@@ -36,9 +36,9 @@ class Record:
     @property
     def on_date(self) -> datetime:
         if self.month == 2 and self.day == 29 and not IS_LEAP:
-            return datetime(CURRENT_YEAR, 3, 1)
+            return datetime(CURRENT_YEAR, 3, 1).date()
         else:
-            return datetime(CURRENT_YEAR, self.month, self.day)
+            return datetime(CURRENT_YEAR, self.month, self.day).date()
             
     def to_event(self) -> icalendar.Event:
         event = icalendar.Event()
@@ -54,7 +54,7 @@ class Record:
 
 def merge_events(events: Iterable[icalendar.Event]) -> icalendar.Calendar:
     cal = icalendar.Calendar()
-    cal.add('version', '2.0')
+    cal.add('version', '2.1')
     cal.add('prodid', '-//aPC//aPC//EN')
     [
         cal.add_component(event) 
