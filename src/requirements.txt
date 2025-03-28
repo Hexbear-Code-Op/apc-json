@@ -1,1 +1,10 @@
 icalendar
+yaml
+requests
+pathlib
+json
+operator
+sys
+datetime
+dataclasses
+typing
