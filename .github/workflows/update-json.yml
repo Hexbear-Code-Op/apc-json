@@ -33,7 +33,7 @@ jobs:
             - name: Rename old apc.json file
               run: |
                 cd src
-                mv ./json/apc.json ./json/old_apc.json
+                mv ./json/aPC.json ./json/old_apc.json
 
             - name: Pull new json file
               run: |
