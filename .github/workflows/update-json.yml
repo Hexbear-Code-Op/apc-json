@@ -48,20 +48,31 @@ jobs:
                 cd src/json
                 echo "OLD_HASH=$(sha256sum old_apc.json | cut -d' ' -f1)" >> $GITHUB_ENV
                 echo "NEW_HASH=$(sha256sum aPC.json | cut -d' ' -f1)" >> $GITHUB_ENV
-                [ "$OLD_HASH" != "$NEW_HASH" ] || exit 1
+
+                # Set output and exit cleanly
+                if [ "$OLD_HASH" != "$NEW_HASH" ]; then
+                    echo "CHANGES_DETECTED=true" >> $GITHUB_OUTPUT
+                else
+                    echo "CHANGES_DETECTED=false" >> $GITHUB_OUTPUT
+                    echo "No changes detected - exiting cleanly"
+                    exit 0  # Explicit but technically optional
+                fi
             
             - name: Generate ICS file
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
               run: |
                 cd src
                 python to_ics.py
 
             - name: Identify new events
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
               id: changelog
               run: |
                 python src/compare_events.py src/json/old_aPC.json src/json/aPC.json > changes.md
                 echo "CHANGES=$(cat changes.md)" >> $GITHUB_ENV
 
             - name: Commit changes
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
               run: |
                 git config --global user.name "GitHub Actions"
                 git config --global user.email "actions@github.com"
@@ -69,12 +80,14 @@ jobs:
                 git commit -m "Automatic Data Update"
 
             - name: Create version tag
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
               id: tagging
               run: |
                 echo "TAG_NAME=v$(date +'%Y-%m-%d')" >> $GITHUB_ENV
                 git tag -a $TAG_NAME -m "Monthly Update" -m "$CHANGES"
         
             - name: Push changes
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
               uses: ad-m/github-push-action@master
               with:
                 github_token: ${{ secrets.GITHUB_TOKEN }}
