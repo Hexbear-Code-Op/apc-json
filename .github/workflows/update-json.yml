@@ -8,18 +8,20 @@ on:
 jobs:
     update-json:
         runs-on: ubuntu-latest
-        
-        env:
-          OLD_HASH: ""
-          NEW_HASH: ""
-
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v4
               with:
                 fetch-depth: 0
                 persist-credentials: true
-
+            
+            - name: Create config file
+              env:
+                  KEY: ${{ secrets.KEY }}
+              run: |
+                  cd src/config
+                  echo "key: \"$KEY\"" >> config.yml
+                  
             - name: Setup Python
               uses: actions/setup-python@v4
               with:
