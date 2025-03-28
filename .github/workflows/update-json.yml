@@ -46,7 +46,7 @@ jobs:
               id: hash-check
               run: |
                 cd src/json
-                echo "OLD_HASH=$(sha256sum old_aPC.json | cut -d' ' -f1)" >> $GITHUB_ENV
+                echo "OLD_HASH=$(sha256sum old_apc.json | cut -d' ' -f1)" >> $GITHUB_ENV
                 echo "NEW_HASH=$(sha256sum aPC.json | cut -d' ' -f1)" >> $GITHUB_ENV
                 [ "$OLD_HASH" != "$NEW_HASH" ] || exit 1
             
