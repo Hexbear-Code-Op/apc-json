@@ -14,6 +14,11 @@ jobs:
               with:
                 fetch-depth: 0
                 persist-credentials: true
+                
+            - name: Extract branch name
+              shell: bash
+              run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+              id: extract_branch
             
             - name: Create config file
               env:
@@ -91,5 +96,5 @@ jobs:
               uses: ad-m/github-push-action@master
               with:
                 github_token: ${{ secrets.GITHUB_TOKEN }}
-                branch: add-github-actions
+                branch: ${{ steps.extract_branch.outputs.branch}}
                 tags: true
