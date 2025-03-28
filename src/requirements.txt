@@ -1,1 +1,7 @@
 icalendar
+pyyaml
+requests
+pathlib
+datetime
+dataclasses
+typing
