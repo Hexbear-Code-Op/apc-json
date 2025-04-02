@@ -1,0 +1,100 @@
+name: Pull new json data.
+
+on:
+    schedule:
+        - cron: "0 0 1 * *"
+    workflow_dispatch:          
+
+jobs:
+    update-json:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: https://code.forgejo.org/actions/checkout@v4
+              with:
+                fetch-depth: 0
+                persist-credentials: true
+                
+            - name: Extract branch name
+              shell: bash
+              run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+              id: extract_branch
+            
+            - name: Create config file
+              env:
+                  KEY: ${{ secrets.KEY }}
+              run: |
+                  cd src/config
+                  echo "key: \"$KEY\"" >> config.yml
+                  
+            - name: Setup Python
+              uses: actions/setup-python@v4
+              with:
+                python-version: "3.10"
+
+            - name: Install Dependencies
+              run: |
+                cd src
+                pip install -r requirements.txt
+
+            - name: Rename old apc.json file
+              run: |
+                cd src
+                mv ./json/aPC.json ./json/old_apc.json
+
+            - name: Pull new json file
+              run: |
+                cd src
+                python get_aPC_JSON.py
+
+            - name: Check for changes
+              id: hash-check
+              run: |
+                cd src/json
+                echo "OLD_HASH=$(sha256sum old_apc.json | cut -d' ' -f1)" >> $GITHUB_ENV
+                echo "NEW_HASH=$(sha256sum aPC.json | cut -d' ' -f1)" >> $GITHUB_ENV
+
+                # Set output and exit cleanly
+                if [ "$OLD_HASH" != "$NEW_HASH" ]; then
+                    echo "CHANGES_DETECTED=true" >> $GITHUB_OUTPUT
+                else
+                    echo "CHANGES_DETECTED=false" >> $GITHUB_OUTPUT
+                    echo "No changes detected - exiting cleanly"
+                    exit 0  # Explicit but technically optional
+                fi
+            
+            - name: Generate ICS file
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
+              run: |
+                cd src
+                python to_ics.py
+
+            - name: Identify new events
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
+              id: changelog
+              run: |
+                python src/compare_events.py src/json/old_aPC.json src/json/aPC.json > changes.md
+                echo "CHANGES=$(cat changes.md)" >> $GITHUB_ENV
+
+            - name: Commit changes
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
+              run: |
+                git config --global user.name "GitHub Actions"
+                git config --global user.email "actions@github.com"
+                git add src/json/aPC.json src/ics/aPC.ics
+                git commit -m "Automatic Data Update"
+
+            - name: Create version tag
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
+              id: tagging
+              run: |
+                echo "TAG_NAME=v$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+                git tag -a $TAG_NAME -m "Monthly Update" -m "$CHANGES"
+        
+            - name: Push changes
+              if: steps.hash-check.outputs.CHANGES_DETECTED == 'true'
+              uses: https://github.com/ad-m/github-push-action@master
+              with:
+                github_token: ${{ secrets.GITHUB_TOKEN }}
+                branch: ${{ steps.extract_branch.outputs.branch}}
+                tags: true
